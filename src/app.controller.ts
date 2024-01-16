@@ -1,17 +1,17 @@
 import {
+  Body,
   Controller,
   Get,
+  Header,
+  Param,
   Post,
+  StreamableFile,
   UploadedFile,
-  UseInterceptors,
 } from '@nestjs/common';
 import { AppService } from './app.service';
-import { ApiTags } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBody, ApiTags } from '@nestjs/swagger';
 import { Express } from 'express';
 import { MediaUpload } from './decorators/file-upload.decorators';
-import { join } from 'path';
-import { writeFileSync } from 'fs';
 
 @ApiTags('Mega File Upload')
 @Controller()
@@ -25,5 +25,27 @@ export class AppController {
     file: Express.Multer.File,
   ) {
     return this.appService.uploadFile(file);
+  }
+
+  @Post('download')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        fileUrl: {
+          type: 'string',
+        },
+      },
+    },
+  })
+  @Header('Content-Type', 'application/jpeg')
+  @Header('Content-Disposition', 'attachment; filename=download.jpeg')
+  public async downloadFile(@Body() fileUrlObject: { fileUrl: string }) {
+    const data = await this.appService.downloadFile(fileUrlObject);
+    const readstream = new StreamableFile(data);
+    // console.log(readstream)
+    readstream.getHeaders();
+    // console.log(readstream.getStream());
+    return readstream;
   }
 }

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Storage } from 'megajs';
+import { File, Storage } from 'megajs';
 
 @Injectable()
 export class AppService {
@@ -22,7 +22,6 @@ export class AppService {
 
   public async uploadFile(file: Express.Multer.File): Promise<any> {
     try {
-      console.log(process.env.MegaEmailAddress);
       const storage = await this.createMegaAdmin();
       const fileStream = await storage.upload(
         {
@@ -31,7 +30,29 @@ export class AppService {
         },
         file.buffer,
       ).complete;
-      return { message: 'Upload complete' };
+      const link = await fileStream.link({ key: storage.key });
+      console.log('Public link:', link);
+      return { message: 'Upload initiated', link };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  public async downloadFile(fileUrlObject: { fileUrl: string }): Promise<any> {
+    try {
+      // const [url, key] = fileUrl.split('#');
+      const file = File.fromURL(fileUrlObject.fileUrl);
+      await file.loadAttributes();
+      // console.log('file name', file.name)
+      // console.log('file size', file.size)
+      // console.log('file type', file.type)
+      // console.log('file timestamp', file.timestamp)
+      console.log(await file.loadAttributes());
+      const data = await file.downloadBuffer({
+        start: 0,
+      });
+      // console.log(data)
+      return data;
     } catch (error) {
       throw error;
     }
